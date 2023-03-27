@@ -1,0 +1,108 @@
+using System;
+using System.Threading;
+using Telegram.Bot;
+using Telegram.Bot.Types;
+
+namespace ExpertBot
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            /* Тут просто инициализирую бота и даю методы, ReadLine Здесь нужен чтобы программа
+             * не заканчивала свою раюоту и бот работал, как будет сервер так поменяем*/
+            var client =new TelegramBotClient("5844793789:AAEx-E8FfHw9SBbJuMroR94npIv-J2rI0_E");
+            client.StartReceiving(Update,Error);
+            Console.ReadLine();
+
+
+
+
+
+
+        }
+
+        static Task Error(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)   
+            /* Это шняга на случай всяких ошибок, заполнять её возможно вообще не придётся*/
+        {
+            throw new NotImplementedException();
+        }
+        
+        async static Task Update(ITelegramBotClient botClient, Update update, CancellationToken token)
+        {
+            /*Тут основная часть программы, переменная message - непосредственно то, что нам отправил пользователь*/
+            var message = update.Message;
+            if (message.Text != null) /*эта проверка на спам картинками и прочей фингёй, мб можно убрать*/
+            {
+                Console.WriteLine(message.Text);
+                if (message.Text.ToLower() == "/start") /*Здесь находится псевдо меню в формате сообщение - ответ, 
+                                                         когда разберётесь с разными правами доступа сделаем лучше*/
+                {
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль(Введите слово без кавычек):\n1.Эксперт - введите '/expert'\n2Проверяющий - введите '/checker'");
+                }
+                if (message.Text.ToLower() == "/expert") /*Выводим функции эксперта*/
+                {
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Как эксперт вы можете:\nПросмотреть выложенные документы - '/docs_watch'\nЗайти как проверяющий - '/checker'");
+                }
+                if (message.Text.ToLower() == "/checker") /*Выводим функции проверяющего*/
+                {
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Как проверяющий вы можете:\nПросмотреть выложенные документы - '/docs_watch'\n" +
+                        "Добавить документ - '/docs_add',отпрвьте файл в этом же сообщении\nУдалить документ из базы - '/docs_delete'\nЗайти как эксперт - '/expert'");
+                }
+                if (message.Text.ToLower() == "/docs_watch")
+                {
+                    StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
+                    int count = Convert.ToInt32(StreamR.ReadLine());
+                    string Reply = "";
+                    if (count == 0)
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "В данный момент в системе нет файлов");
+                    }
+                    else
+                    {
+                        for (int i = 0; i < count; i++)
+                        {
+                            string Str = StreamR.ReadLine();
+                            Reply = Reply + Convert.ToString(i + 1) + ". " + Str + "\n";
+                        }
+                        StreamR.Close();
+                        Reply = "В базе в данный момент файлов " + Convert.ToString(count) + ".\n" + Reply;
+                        await botClient.SendTextMessageAsync(message.Chat.Id, Reply);
+                    }
+                }
+                if (message.Text.ToLower() == "/docs_add")
+                {
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл");
+                }
+            } 
+
+            if (message.Document!= null) /*Здесь мы будем скачивать документ, большинстов команд я взял из гайда и немного
+                                             переиначил(потому подробных пояснений не просите), но соль в том, что когда нам посылают файл, мы
+                                             сохраняем его на рабочем столе
+                                             как оно будет потом, я не знаю, но в моих планах пока указать путь до папки на рабочем столе*/
+                       {
+                         await botClient.SendTextMessageAsync(message.Chat.Id, "Файл принят");
+
+                          var fileId = update.Message.Document.FileId;
+                          var fileInfo = await botClient.GetFileAsync(fileId);
+                          var filePath = fileInfo.FilePath;
+
+                          string destinationFilePath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\{message.Document.FileName}";
+                          await using Stream fileStream = System.IO.File.OpenWrite(destinationFilePath);
+                          await botClient.DownloadFileAsync(filePath, fileStream);
+                          fileStream.Close();
+                          StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
+                          int count = Convert.ToInt32(StreamR.ReadLine());
+                          string Reply = StreamR.ReadToEnd();
+                          StreamR.Close();
+                          StreamWriter StreamW = new StreamWriter("C:\\Users\\ov00v\\Desktop\\BotLibr.txt",false);
+                          StreamW.Write(Convert.ToString(count + 1) + "\n" + Reply+"\n"+ message.Document.FileName);
+                          StreamW.Close();
+                       }
+    
+            
+            message = null;
+
+        }
+    }
+}
