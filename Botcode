@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.InputFiles;
 
 namespace ExpertBot
 {
@@ -15,11 +16,6 @@ namespace ExpertBot
             client.StartReceiving(Update,Error);
             Console.ReadLine();
 
-
-
-
-
-
         }
 
         static Task Error(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)   
@@ -32,77 +28,133 @@ namespace ExpertBot
         {
             /*Тут основная часть программы, переменная message - непосредственно то, что нам отправил пользователь*/
             var message = update.Message;
-            if (message.Text != null) /*эта проверка на спам картинками и прочей фингёй, мб можно убрать*/
+            if (message != null)
             {
-                Console.WriteLine(message.Text);
-                if (message.Text.ToLower() == "/start") /*Здесь находится псевдо меню в формате сообщение - ответ, 
-                                                         когда разберётесь с разными правами доступа сделаем лучше*/
+                if (message.Text != null) /*эта проверка на спам картинками и прочей фингёй, мб можно убрать*/
                 {
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль(Введите слово без кавычек):\n1.Эксперт - введите '/expert'\n2Проверяющий - введите '/checker'");
-                }
-                if (message.Text.ToLower() == "/expert") /*Выводим функции эксперта*/
-                {
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Как эксперт вы можете:\nПросмотреть выложенные документы - '/docs_watch'\nЗайти как проверяющий - '/checker'");
-                }
-                if (message.Text.ToLower() == "/checker") /*Выводим функции проверяющего*/
-                {
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Как проверяющий вы можете:\nПросмотреть выложенные документы - '/docs_watch'\n" +
-                        "Добавить документ - '/docs_add',отпрвьте файл в этом же сообщении\nУдалить документ из базы - '/docs_delete'\nЗайти как эксперт - '/expert'");
-                }
-                if (message.Text.ToLower() == "/docs_watch")
-                {
-                    StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
-                    int count = Convert.ToInt32(StreamR.ReadLine());
-                    string Reply = "";
-                    if (count == 0)
+                    Console.WriteLine(message.Text);
+                    if (message.Text.ToLower() == "/start") /*Здесь находится псевдо меню в формате сообщение - ответ, 
+                                                             когда разберётесь с разными правами доступа сделаем лучше*/
                     {
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "В данный момент в системе нет файлов");
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль(Введите слово без кавычек):\n1.Эксперт - введите '/expert'\n2Проверяющий - введите '/checker'");
                     }
-                    else
+                    if (message.Text.ToLower() == "/expert") /*Выводим функции эксперта*/
                     {
-                        for (int i = 0; i < count; i++)
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Как эксперт вы можете:\nПросмотреть выложенные документы - '/docs_watch'\nЗайти как проверяющий - '/checker'");
+                    }
+                    if (message.Text.ToLower() == "/checker") /*Выводим функции проверяющего*/
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Как проверяющий вы можете:\nПросмотреть выложенные документы - '/docs_watch'\n" +
+                            "Добавить документ - '/docs_add',отпрвьте файл в этом же сообщении\nЗайти как эксперт - '/expert'");
+                    }
+                    if (message.Text.ToLower() == "/docs_watch")
+                    {
+                        StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
+                        int count = Convert.ToInt32(StreamR.ReadLine());
+                        string Reply = "";
+                        if (count == 0)
                         {
-                            string Str = StreamR.ReadLine();
-                            Reply = Reply + Convert.ToString(i + 1) + ". " + Str + "\n";
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "В данный момент в системе нет файлов");
                         }
-                        StreamR.Close();
-                        Reply = "В базе в данный момент файлов " + Convert.ToString(count) + ".\n" + Reply;
-                        await botClient.SendTextMessageAsync(message.Chat.Id, Reply);
+                        else
+                        {
+                            for (int i = 0; i < count; i++)
+                            {
+                                string Str = StreamR.ReadLine();
+                                Reply = Reply + Convert.ToString(i + 1) + ". " + Str + "\n";
+                            }
+                            StreamR.Close();
+                            Reply = "В базе в данный момент файлов " + Convert.ToString(count) + ".\n" + Reply;
+                            await botClient.SendTextMessageAsync(message.Chat.Id, Reply);
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Для того чтобы скачать документ, введите '/docs_download 'номер файла' '\n" +
+                                "Для того чтобы удалить документ, введите '/docs_delete 'номер файла' ' (функция проверяющего)");
+                        }
                     }
+                    if (message.Text.ToLower() == "/docs_add")
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл");
+                    }
+                    if ((message.Text.ToLower().Split(" ")[0] == "/docs_delete") && (message.Text.ToLower().Split(" ").Length == 2))
+                    {
+                        StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
+                        int count = Convert.ToInt32(StreamR.ReadLine());
+                        string Reply = StreamR.ReadToEnd();
+                        StreamR.Close();
+                        string file_name = Reply.Split("\n")[Convert.ToInt32(message.Text.ToLower().Split(" ")[1]) - 1];
+                        Reply = Reply.Replace("\n" + file_name, "");
+                        StreamWriter StreamW = new StreamWriter("C:\\Users\\ov00v\\Desktop\\BotLibr.txt", false);
+                        StreamW.Write(Convert.ToString(count - 1) + "\n" + Reply);
+                        StreamW.Close();
+                        FileInfo fileInfo = new FileInfo("C:\\Users\\ov00v\\Desktop\\" + file_name);
+                        fileInfo.Delete();
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Файл удалён");
+                    }
+                    if ((message.Text.ToLower().Split(" ")[0] == "/docs_download") && (message.Text.ToLower().Split(" ").Length == 2))
+                    {
+
+                        StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
+                        string Reply = StreamR.ReadToEnd();
+                        StreamR.Close();
+                        string file_name = Reply.Split("\n")[Convert.ToInt32(message.Text.ToLower().Split(" ")[1])];
+                        await using Stream stream = System.IO.File.OpenRead("C:\\Users\\ov00v\\Desktop\\" + file_name);
+                        await botClient.SendDocumentAsync(message.Chat.Id, new InputOnlineFile(stream, file_name));
+
+                    }
+                    if (message.Text.ToLower() == "/add_questions")
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id,
+                            "Отправьте название документа и вопросы(Документ: name без расширения\n Вопросы: вопрос1\nвопрос2)");
+                    }
+                    if (message.Text.ToLower().Contains("документ:"))
+                    {
+                        string text = message.Text;
+                        string[] subs = text.Split('\n');
+                        string filePath = "C:\\Users\\ov00v\\Desktop\\Bot_forms\\";
+                        int found = subs[0].IndexOf(":");
+                        string name = subs[0].Substring(found + 2);
+                        filePath = filePath + name + ".txt";
+                        int found2 = subs[1].IndexOf(":");
+                        subs[1] = subs[1].Substring(found2 + 2);
+                        // открываем файл если нет файла то создаем файл
+                        using (StreamWriter fileStream = System.IO.File.Exists(filePath) ? System.IO.File.AppendText(filePath) : System.IO.File.CreateText(filePath))
+                        {
+                            for (int i = 1; i < subs.Length; i++)
+                            {
+                                fileStream.WriteLine(subs[i]);
+                            }
+                        }
+                    }
+
+
                 }
-                if (message.Text.ToLower() == "/docs_add")
+
+                if (message.Document != null) /*Здесь мы будем скачивать документ, большинстов команд я взял из гайда и немного
+                                                 переиначил(потому подробных пояснений не просите), но соль в том, что когда нам посылают файл, мы
+                                                 сохраняем его на рабочем столе
+                                                 как оно будет потом, я не знаю, но в моих планах пока указать путь до папки на рабочем столе*/
                 {
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл");
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Файл принят");
+
+                    var fileId = update.Message.Document.FileId;
+                    var fileInfo = await botClient.GetFileAsync(fileId);
+                    var filePath = fileInfo.FilePath;
+
+                    string destinationFilePath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\{message.Document.FileName}";
+                    await using Stream fileStream = System.IO.File.OpenWrite(destinationFilePath);
+                    await botClient.DownloadFileAsync(filePath, fileStream);
+                    fileStream.Close();
+                    StreamReader StreamR = new StreamReader("C:\\UC:\\Users\\ov00v\\Desktop\\BotLibr.txt");
+                    int count = Convert.ToInt32(StreamR.ReadLine());
+                    string Reply = StreamR.ReadToEnd();
+                    StreamR.Close();
+                    StreamWriter StreamW = new StreamWriter("C:\\Users\\ov00v\\Desktop\\BotLibr.txt", false);
+                    StreamW.Write(Convert.ToString(count + 1) + "\n" + Reply + "\n" + message.Document.FileName);
+                    StreamW.Close();
                 }
-            } 
 
-            if (message.Document!= null) /*Здесь мы будем скачивать документ, большинстов команд я взял из гайда и немного
-                                             переиначил(потому подробных пояснений не просите), но соль в том, что когда нам посылают файл, мы
-                                             сохраняем его на рабочем столе
-                                             как оно будет потом, я не знаю, но в моих планах пока указать путь до папки на рабочем столе*/
-                       {
-                         await botClient.SendTextMessageAsync(message.Chat.Id, "Файл принят");
+            }
 
-                          var fileId = update.Message.Document.FileId;
-                          var fileInfo = await botClient.GetFileAsync(fileId);
-                          var filePath = fileInfo.FilePath;
-
-                          string destinationFilePath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\{message.Document.FileName}";
-                          await using Stream fileStream = System.IO.File.OpenWrite(destinationFilePath);
-                          await botClient.DownloadFileAsync(filePath, fileStream);
-                          fileStream.Close();
-                          StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
-                          int count = Convert.ToInt32(StreamR.ReadLine());
-                          string Reply = StreamR.ReadToEnd();
-                          StreamR.Close();
-                          StreamWriter StreamW = new StreamWriter("C:\\Users\\ov00v\\Desktop\\BotLibr.txt",false);
-                          StreamW.Write(Convert.ToString(count + 1) + "\n" + Reply+"\n"+ message.Document.FileName);
-                          StreamW.Close();
-                       }
-    
-            
-            message = null;
 
         }
-    }
+        }
 }
