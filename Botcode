@@ -7,7 +7,12 @@ using Telegram.Bot.Types.InputFiles;
 namespace ExpertBot
 {
     internal class Program
-    {
+    {   
+        /* Тут мы создаём список пользователей и чатайдишников */
+        public static string? name;
+        public static List<string> args = new List<string> { "Edwardsooon", "polina_kuvaleva", "kirill_sheremetev", "Beauty", "MegaMind", "1" };
+        public static SortedSet<long> ChatIDs = new();
+    
         static void Main(string[] args)
         {
             /* Тут просто инициализирую бота и даю методы, ReadLine Здесь нужен чтобы программа
@@ -36,18 +41,24 @@ namespace ExpertBot
                     if (message.Text.ToLower() == "/start") /*Здесь находится псевдо меню в формате сообщение - ответ, 
                                                              когда разберётесь с разными правами доступа сделаем лучше*/
                     {
+                        // Спрашиваем имя и если оно находится в списке пользователей даём ему доступ
+                        if (args.Contains(message.Chat.Username))
+                        {
+                            ChatIDs.Add(message.Chat.Id);
+                        }
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Добро пожаловать");
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль(Введите слово без кавычек):\n1.Эксперт - введите '/expert'\n2Проверяющий - введите '/checker'");
                     }
-                    if (message.Text.ToLower() == "/expert") /*Выводим функции эксперта*/
+                    if (message.Text.ToLower() == "/expert" && ChatIDs.Contains(message.Chat.Id)) /*Выводим функции эксперта*/
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Как эксперт вы можете:\nПросмотреть выложенные документы - '/docs_watch'\nЗайти как проверяющий - '/checker'");
                     }
-                    if (message.Text.ToLower() == "/checker") /*Выводим функции проверяющего*/
+                    if (message.Text.ToLower() == "/checker" && ChatIDs.Contains(message.Chat.Id)) /*Выводим функции проверяющего*/
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Как проверяющий вы можете:\nПросмотреть выложенные документы - '/docs_watch'\n" +
                             "Добавить документ - '/docs_add',отпрвьте файл в этом же сообщении\nЗайти как эксперт - '/expert'");
                     }
-                    if (message.Text.ToLower() == "/docs_watch")
+                    if (message.Text.ToLower() == "/docs_watch" && ChatIDs.Contains(message.Chat.Id))
                     {
                         StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
                         int count = Convert.ToInt32(StreamR.ReadLine());
@@ -70,11 +81,11 @@ namespace ExpertBot
                                 "Для того чтобы удалить документ, введите '/docs_delete 'номер файла' ' (функция проверяющего)");
                         }
                     }
-                    if (message.Text.ToLower() == "/docs_add")
+                    if (message.Text.ToLower() == "/docs_add" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл");
                     }
-                    if ((message.Text.ToLower().Split(" ")[0] == "/docs_delete") && (message.Text.ToLower().Split(" ").Length == 2))
+                    if ((message.Text.ToLower().Split(" ")[0] == "/docs_delete") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
                     {
                         StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
                         int count = Convert.ToInt32(StreamR.ReadLine());
@@ -89,7 +100,7 @@ namespace ExpertBot
                         fileInfo.Delete();
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Файл удалён");
                     }
-                    if ((message.Text.ToLower().Split(" ")[0] == "/docs_download") && (message.Text.ToLower().Split(" ").Length == 2))
+                    if ((message.Text.ToLower().Split(" ")[0] == "/docs_download") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
                     {
 
                         StreamReader StreamR = new StreamReader("C:\\Users\\ov00v\\Desktop\\BotLibr.txt");
@@ -100,12 +111,12 @@ namespace ExpertBot
                         await botClient.SendDocumentAsync(message.Chat.Id, new InputOnlineFile(stream, file_name));
 
                     }
-                    if (message.Text.ToLower() == "/add_questions")
+                    if (message.Text.ToLower() == "/add_questions" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id,
                             "Отправьте название документа и вопросы(Документ: name без расширения\n Вопросы: вопрос1\nвопрос2)");
                     }
-                    if (message.Text.ToLower().Contains("документ:"))
+                    if (message.Text.ToLower().Contains("документ:") && ChatIDs.Contains(message.Chat.Id))
                     {
                         string text = message.Text;
                         string[] subs = text.Split('\n');
@@ -128,7 +139,7 @@ namespace ExpertBot
 
                 }
 
-                if (message.Document != null) /*Здесь мы будем скачивать документ, большинстов команд я взял из гайда и немного
+                if (message.Document != null && ChatIDs.Contains(message.Chat.Id)) /*Здесь мы будем скачивать документ, большинстов команд я взял из гайда и немного
                                                  переиначил(потому подробных пояснений не просите), но соль в том, что когда нам посылают файл, мы
                                                  сохраняем его на рабочем столе
                                                  как оно будет потом, я не знаю, но в моих планах пока указать путь до папки на рабочем столе*/
