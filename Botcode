@@ -3,32 +3,66 @@ using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.InputFiles;
+using Npgsql;
+using System.Configuration;
+/* Для работы нужно уставносить все зависимости и добавить файл App.config*/
+
 
 namespace ExpertBot
 {
+
     internal class Program
-    {   
+    {
         /* Тут мы создаём список пользователей и чатайдишников */
         public static string? name;
-        public static List<string> args = new List<string> { "Edwardsooon", "polina_kuvaleva", "kirill_sheremetev", "polina_bulg", "MegaMind", "1" };
+        /* Вот эти айди */
+        public static List<string> args = new List<string> { "Edwardsooon", "polina_kuvaleva", "kirill_sheremetev", "Beauty", "MegaMind", "RiverSpider" };
+        public static List<string> moders = new List<string>();
+        public static List<string> experts = new List<string>(); // Добавь проверку на эксперта и воркера(это те кто файлы добавляют)
+        public static List<string> workers = new List<string>();
         public static SortedSet<long> ChatIDs = new();
-    
+
         static void Main(string[] args)
         {
+            /*Тута подключаемся к ДБ и получаем айдишники */
+            string connectionString = ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString;
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                string query = "SELECT moder, expert, worker FROM users";
+                using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+                {
+                    using (NpgsqlDataReader reader = command.ExecuteReader())
+                    {
+                        
+
+                        while (reader.Read())
+                        {
+                            string[] moderValues = (string[])reader.GetValue(0); /* Везде содержатся ваши айди */
+                            string[] expertValues = (string[])reader.GetValue(1);
+                            string[] workerValues = (string[])reader.GetValue(2);
+                            moders.AddRange(moderValues);
+                            experts.AddRange(expertValues);
+                            workers.AddRange(workerValues);
+
+
+
+
             /* Тут просто инициализирую бота и даю методы, ReadLine Здесь нужен чтобы программа
              * не заканчивала свою раюоту и бот работал, как будет сервер так поменяем*/
-            var client =new TelegramBotClient("5844793789:AAEx-E8FfHw9SBbJuMroR94npIv-J2rI0_E");
-            client.StartReceiving(Update,Error);
+            var client = new TelegramBotClient("5844793789:AAEx-E8FfHw9SBbJuMroR94npIv-J2rI0_E");
+            client.StartReceiving(Update, Error);
             Console.ReadLine();
 
         }
 
-        static Task Error(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)   
-            /* Это шняга на случай всяких ошибок, заполнять её возможно вообще не придётся*/
+        static Task Error(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
+        /* Это шняга на случай всяких ошибок, заполнять её возможно вообще не придётся*/
         {
             throw new NotImplementedException();
         }
-        
+
         async static Task Update(ITelegramBotClient botClient, Update update, CancellationToken token)
         {
             /*Тут основная часть программы, переменная message - непосредственно то, что нам отправил пользователь*/
@@ -41,8 +75,8 @@ namespace ExpertBot
                     if (message.Text.ToLower() == "/start") /*Здесь находится псевдо меню в формате сообщение - ответ, 
                                                              когда разберётесь с разными правами доступа сделаем лучше*/
                     {
-                        // Спрашиваем имя и если оно находится в списке пользователей даём ему доступ
-                        if (args.Contains(message.Chat.Username))
+                        // Спрашиваем имя и если оно находится в списке пользователей даём ему доступ 
+                        if (moders.Contains(message.Chat.Username)) // Теперь тут проверяют на модера 
                         {
                             ChatIDs.Add(message.Chat.Id);
                         }
@@ -167,5 +201,9 @@ namespace ExpertBot
 
 
         }
+    }
+}
+            }
         }
+    }
 }
