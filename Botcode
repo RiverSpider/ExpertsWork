@@ -10,7 +10,7 @@ namespace ExpertBot
     {   
         /* Тут мы создаём список пользователей и чатайдишников */
         public static string? name;
-        public static List<string> args = new List<string> { "Edwardsooon", "polina_kuvaleva", "kirill_sheremetev", "Beauty", "MegaMind", "1" };
+        public static List<string> args = new List<string> { "Edwardsooon", "polina_kuvaleva", "kirill_sheremetev", "polina_bulg", "MegaMind", "1" };
         public static SortedSet<long> ChatIDs = new();
     
         static void Main(string[] args)
