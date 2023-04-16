@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "3k2V2JdXH+ASyt2IoYj++0sS7aMr5oMgsUsahoI3Vq+RQ/3ElsGy9fN75eSCuOM4oAs+uhdBJSCN52SNUlIqWQ==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Полина\\source\\repos\\ExpertBot\\ExpertBot\\ExpertBot.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Полина\\.nuget\\packages\\newtonsoft.json\\12.0.2\\newtonsoft.json.12.0.2.nupkg.sha512",
+    "C:\\Users\\Полина\\.nuget\\packages\\telegram.bot\\18.0.0\\telegram.bot.18.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
