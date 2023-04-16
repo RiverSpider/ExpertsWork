@@ -25,33 +25,38 @@ namespace ExpertBot
         async static Task Update(ITelegramBotClient botClient, Update update, CancellationToken token)
         {
             var message = update.Message;
+
             if (message != null)
             {
                 if (message.Text != null)
                 {
                     Console.WriteLine(message.Text);
+
                     if (message.Text.ToLower() == "/start")
                     {
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль\n1.Эксперт - введите '/expert'\n2.Проверяющий - введите '/checker'");
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль\n1.Эксперт - введите /expert\n2.Проверяющий - введите /checker");
                     }
+
                     if (message.Text.ToLower() == "/expert")
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, 
                         "Как эксперт вы можете:\n" + 
-                        "Просмотреть каталоги - '/directory_watch'\n" +
-                        "Просмотреть документы - '/docx_watch'\n" + 
-                        "Зайти как проверяющий - '/checker'");//?
+                        "Просмотреть каталоги: /directory_watch\n" +
+                        "Просмотреть документы: /docx_watch\n" + 
+                        "Зайти как проверяющий: /checker");//?
                     }
+
                     if (message.Text.ToLower() == "/checker")
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, 
                         "Как проверяющий вы можете:\n" + 
-                        "Добавить каталог - '/add_directory\n'" +
-                        "Просмотреть каталоги - '/directory_watch'\n" +
-                        "Удалить каталог - '/directory_delete\n'" + 
-                        "Добавить документ - '/add_docx'(прикрепите файл)\n" +
-                        "Просмотреть документы - '/docx_watch'");
+                        "Добавить каталог: /add_directory\n" +
+                        "Просмотреть каталоги: /directory_watch\n" +
+                        "Удалить каталог: /directory_delete\n" + 
+                        "Добавить документ: /add_docx\n" +
+                        "Просмотреть документы: /docx_watch");
                     }
+
                     if (message.Text.ToLower() == "/docx_watch")
                     {
                         StreamReader StreamR = new StreamReader("C:\\Users\\Полина\\source\\repos\\ExpertBot\\BotLibr.txt");
@@ -75,10 +80,12 @@ namespace ExpertBot
                             "Для удаления файла введите: /docx_delete [number_docx]");
                         }
                     }
+
                     if (message.Text.ToLower() == "/add_docx")
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл");
                     }
+
                     if ((message.Text.ToLower().Split(" ")[0] == "/docx_delete") && (message.Text.ToLower().Split(" ").Length == 2))
                     {
                         StreamReader StreamR = new StreamReader("C:\\Users\\Полина\\source\\repos\\ExpertBot\\BotLibr.txt");
@@ -106,11 +113,13 @@ namespace ExpertBot
                         await botClient.SendDocumentAsync(message.Chat.Id, new InputOnlineFile(stream, file_name));
 
                     }
+
                     if (message.Text.ToLower() == "/add_directory")
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id,
-                            "Для создания калатога введите: /add_directory [name_directory]");
+                            "Для создания калатога введите: /n/add_directory [name_directory]");
                     }
+
                     if ((message.Text.ToLower().Split(" ")[0] == "/add_directory") && (message.Text.ToLower().Split(" ").Length == 2))
                     {   
                         string path = "C:\\Users\\Полина\\source\\repos\\ExpertBot\\Bot_directory\\";
@@ -126,31 +135,28 @@ namespace ExpertBot
                             await botClient.SendTextMessageAsync(message.Chat.Id, "Директория " + subs[1] + " уже существует");
                         }
                     }
+
                     if(message.Text.ToLower() == "/directory_watch")
                     {
                         string dirName = "C:\\Users\\Полина\\source\\repos\\ExpertBot\\Bot_directory\\";
                         if (Directory.Exists(dirName))
                         {
-                            Console.WriteLine("Подкаталоги:");
-                            string[] dirs = Directory.GetDirectories(dirName);
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Подкаталоги:");
+                            string[] dirs = Directory.GetDirectories(dirName);//?
+
                             foreach (string s in dirs)
                             {
-                                Console.WriteLine(s);
-                            }
-                            Console.WriteLine();
-                            Console.WriteLine("Файлы:");
-                            string[] files = Directory.GetFiles(dirName);
-                            foreach (string s in files)
-                            {
-                                Console.WriteLine(s);
+                                await botClient.SendTextMessageAsync(message.Chat.Id, s.Split("\\")[7]);
                             }
                         }
                     }
+
                     if(message.Text.ToLower() == "/directory_delete")
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id,
                             "Для удаления калатога введите: /directory_delete [name_directory]");
                     }
+
                     if((message.Text.ToLower().Split(" ")[0] == "/directory_delete") && (message.Text.ToLower().Split(" ").Length == 2))
                     {
                         string[] subs = message.Text.ToLower().Split(" ");
@@ -158,11 +164,11 @@ namespace ExpertBot
                         if (Directory.Exists(dirName))
                         {
                             Directory.Delete(dirName, true);
-                            Console.WriteLine("Каталог " + subs[1] + " удален");
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Каталог " + subs[1] + " удален");
                         }
                         else
                         {
-                            Console.WriteLine("Каталог "  + subs[1] + " не существует");
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Каталог "  + subs[1] + " не существует");
                         }
                     }
                     
@@ -171,6 +177,7 @@ namespace ExpertBot
                         await botClient.SendTextMessageAsync(message.Chat.Id,
                             "Отправьте название документа и вопросы(Документ: name без расширения\n Вопросы: вопрос1\nвопрос2)");
                     }
+
                     if (message.Text.ToLower().Contains("документ:"))
                     {
                         string text = message.Text;
@@ -215,7 +222,6 @@ namespace ExpertBot
                 }
 
             }
-
 
         }
     }
