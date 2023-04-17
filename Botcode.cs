@@ -4,56 +4,24 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using System.Threading.Tasks;
 using System.IO;
-using Npgsql;
+using System.Collections;
+using System.Collections.Generic;
 using Telegram.Bot.Types.InputFiles;
 
 namespace ExpertBot
 {
     internal class Program
     {
-        
+        /* Тут мы создаём список пользователей и чатайдишников */
         public static string? name;
-        
-        public static List<string> args = new List<string> { "Edwardsooon", "polina_kuvaleva", "kirill_sheremetev", "Beauty", "MegaMind", "RiverSpider" };
-        public static List<string> moders = new List<string>();
-        public static List<string> experts = new List<string>();
-        public static List<string> workers = new List<string>();
+        public static List<string> args = new List<string> { "Edwardsooon", "polina_kuvaleva", "kirill_sheremetev", "polina_bulg", "RiverSpider", "1" };
         public static SortedSet<long> ChatIDs = new();
         static void Main(string[] args)
         {
             
-            
-            string connectionString = ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString;
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
-            {
-                connection.Open();
-
-                string query = "SELECT moder, expert, worker FROM users";
-                using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
-                {
-                    using (NpgsqlDataReader reader = command.ExecuteReader())
-                    {
-                        
-
-                        while (reader.Read())
-                        {
-                            string[] moderValues = (string[])reader.GetValue(0); 
-                            string[] expertValues = (string[])reader.GetValue(1);
-                            string[] workerValues = (string[])reader.GetValue(2);
-                            moders.AddRange(moderValues);
-                            experts.AddRange(expertValues);
-                            workers.AddRange(workerValues);
-
-
-                        }
-                    }
-                }
-            }
-
             var client =new TelegramBotClient("5844793789:AAEx-E8FfHw9SBbJuMroR94npIv-J2rI0_E");
             client.StartReceiving(Update,Error);
             Console.ReadLine();
-
         }
 
         static Task Error(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
@@ -73,7 +41,8 @@ namespace ExpertBot
 
                     if (message.Text.ToLower() == "/start")
                     {
-                        if (moders.Contains(message.Chat.Username))
+                        // Спрашиваем имя и если оно находится в списке пользователей даём ему доступ
+                        if (args.Contains(message.Chat.Username))
                         {
                             ChatIDs.Add(message.Chat.Id);
                         }
@@ -244,7 +213,7 @@ namespace ExpertBot
 
                 }
 
-                if (message.Document != null && ChatIDs.Contains(message.Chat.Id))
+                if (message.Document != null)
                 {
                     await botClient.SendTextMessageAsync(message.Chat.Id, "Файл принят");
 
