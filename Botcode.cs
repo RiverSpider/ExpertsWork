@@ -4,17 +4,56 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using System.Threading.Tasks;
 using System.IO;
+using Npgsql;
 using Telegram.Bot.Types.InputFiles;
 
 namespace ExpertBot
 {
     internal class Program
     {
+        
+        public static string? name;
+        
+        public static List<string> args = new List<string> { "Edwardsooon", "polina_kuvaleva", "kirill_sheremetev", "Beauty", "MegaMind", "RiverSpider" };
+        public static List<string> moders = new List<string>();
+        public static List<string> experts = new List<string>();
+        public static List<string> workers = new List<string>();
+        public static SortedSet<long> ChatIDs = new();
         static void Main(string[] args)
         {
+            
+            
+            string connectionString = ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString;
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                string query = "SELECT moder, expert, worker FROM users";
+                using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+                {
+                    using (NpgsqlDataReader reader = command.ExecuteReader())
+                    {
+                        
+
+                        while (reader.Read())
+                        {
+                            string[] moderValues = (string[])reader.GetValue(0); 
+                            string[] expertValues = (string[])reader.GetValue(1);
+                            string[] workerValues = (string[])reader.GetValue(2);
+                            moders.AddRange(moderValues);
+                            experts.AddRange(expertValues);
+                            workers.AddRange(workerValues);
+
+
+                        }
+                    }
+                }
+            }
+
             var client =new TelegramBotClient("5844793789:AAEx-E8FfHw9SBbJuMroR94npIv-J2rI0_E");
             client.StartReceiving(Update,Error);
             Console.ReadLine();
+
         }
 
         static Task Error(ITelegramBotClient arg1, Exception arg2, CancellationToken arg3)
@@ -34,10 +73,15 @@ namespace ExpertBot
 
                     if (message.Text.ToLower() == "/start")
                     {
+                        if (moders.Contains(message.Chat.Username))
+                        {
+                            ChatIDs.Add(message.Chat.Id);
+                        }
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Добро пожаловать");
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль\n1.Эксперт - введите /expert\n2.Проверяющий - введите /checker");
                     }
 
-                    if (message.Text.ToLower() == "/expert")
+                    if (message.Text.ToLower() == "/expert" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, 
                         "Как эксперт вы можете:\n" + 
@@ -46,7 +90,7 @@ namespace ExpertBot
                         "Зайти как проверяющий: /checker");//?
                     }
 
-                    if (message.Text.ToLower() == "/checker")
+                    if (message.Text.ToLower() == "/checker" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, 
                         "Как проверяющий вы можете:\n" + 
@@ -57,7 +101,7 @@ namespace ExpertBot
                         "Просмотреть документы: /docx_watch");
                     }
 
-                    if (message.Text.ToLower() == "/docx_watch")
+                    if (message.Text.ToLower() == "/docx_watch" && ChatIDs.Contains(message.Chat.Id))
                     {
                         StreamReader StreamR = new StreamReader("C:\\Users\\Полина\\source\\repos\\ExpertBot\\BotLibr.txt");
                         string Reply = "";
@@ -81,12 +125,12 @@ namespace ExpertBot
                         }
                     }
 
-                    if (message.Text.ToLower() == "/add_docx")
+                    if (message.Text.ToLower() == "/add_docx" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл");
                     }
 
-                    if ((message.Text.ToLower().Split(" ")[0] == "/docx_delete") && (message.Text.ToLower().Split(" ").Length == 2))
+                    if ((message.Text.ToLower().Split(" ")[0] == "/docx_delete") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
                     {
                         StreamReader StreamR = new StreamReader("C:\\Users\\Полина\\source\\repos\\ExpertBot\\BotLibr.txt");
                         int count = Convert.ToInt32(StreamR.ReadLine());
@@ -102,7 +146,7 @@ namespace ExpertBot
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Файл удалён");
                     }
                     
-                    if ((message.Text.ToLower().Split(" ")[0] == "/docx_download") && (message.Text.ToLower().Split(" ").Length == 2))
+                    if ((message.Text.ToLower().Split(" ")[0] == "/docx_download") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
                     {
 
                         StreamReader StreamR = new StreamReader("C:\\Users\\Полина\\source\\repos\\ExpertBot\\BotLibr.txt");
@@ -114,13 +158,13 @@ namespace ExpertBot
 
                     }
 
-                    if (message.Text.ToLower() == "/add_directory")
+                    if (message.Text.ToLower() == "/add_directory" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id,
                             "Для создания калатога введите: /n/add_directory [name_directory]");
                     }
 
-                    if ((message.Text.ToLower().Split(" ")[0] == "/add_directory") && (message.Text.ToLower().Split(" ").Length == 2))
+                    if ((message.Text.ToLower().Split(" ")[0] == "/add_directory") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
                     {   
                         string path = "C:\\Users\\Полина\\source\\repos\\ExpertBot\\Bot_directory\\";
                         string text = message.Text;
@@ -136,7 +180,7 @@ namespace ExpertBot
                         }
                     }
 
-                    if(message.Text.ToLower() == "/directory_watch")
+                    if(message.Text.ToLower() == "/directory_watch" && ChatIDs.Contains(message.Chat.Id))
                     {
                         string dirName = "C:\\Users\\Полина\\source\\repos\\ExpertBot\\Bot_directory\\";
                         if (Directory.Exists(dirName))
@@ -151,13 +195,13 @@ namespace ExpertBot
                         }
                     }
 
-                    if(message.Text.ToLower() == "/directory_delete")
+                    if(message.Text.ToLower() == "/directory_delete" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id,
                             "Для удаления калатога введите: /directory_delete [name_directory]");
                     }
 
-                    if((message.Text.ToLower().Split(" ")[0] == "/directory_delete") && (message.Text.ToLower().Split(" ").Length == 2))
+                    if((message.Text.ToLower().Split(" ")[0] == "/directory_delete") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
                     {
                         string[] subs = message.Text.ToLower().Split(" ");
                         string dirName = "C:\\Users\\Полина\\source\\repos\\ExpertBot\\Bot_directory\\" + subs[1];
@@ -172,13 +216,13 @@ namespace ExpertBot
                         }
                     }
                     
-                    if (message.Text.ToLower() == "/add_questions")
+                    if (message.Text.ToLower() == "/add_questions" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id,
                             "Отправьте название документа и вопросы(Документ: name без расширения\n Вопросы: вопрос1\nвопрос2)");
                     }
 
-                    if (message.Text.ToLower().Contains("документ:"))
+                    if (message.Text.ToLower().Contains("документ:") && ChatIDs.Contains(message.Chat.Id))
                     {
                         string text = message.Text;
                         string[] subs = text.Split('\n');
@@ -200,7 +244,7 @@ namespace ExpertBot
 
                 }
 
-                if (message.Document != null)
+                if (message.Document != null && ChatIDs.Contains(message.Chat.Id))
                 {
                     await botClient.SendTextMessageAsync(message.Chat.Id, "Файл принят");
 
