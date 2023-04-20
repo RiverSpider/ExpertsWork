@@ -16,7 +16,6 @@ namespace ExpertBot
         /* Тут мы создаём список пользователей и чатайдишников */
         public static string? name;
         /* Вот эти айди */
-        public static List<string> args = new List<string> { "Edwardsooon", "polina_kuvaleva", "kirill_sheremetev", "Beauty", "MegaMind", "RiverSpider" };
         public static List<string> moders = new List<string>();
         public static List<string> experts = new List<string>(); // Добавь проверку на эксперта и воркера(это те кто файлы добавляют)
         public static List<string> workers = new List<string>();
@@ -25,7 +24,7 @@ namespace ExpertBot
         static void Main(string[] args)
         {
             /*Тута подключаемся к ДБ и получаем айдишники */
-            string connectionString = ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString;
+            string connectionString = ConfigurationManager.ConnectionStrings["ExpertBot"].ConnectionString;
             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();
@@ -39,12 +38,16 @@ namespace ExpertBot
 
                         while (reader.Read())
                         {
-                            string[] moderValues = (string[])reader.GetValue(0); /* Везде содержатся ваши айди */
-                            string[] expertValues = (string[])reader.GetValue(1);
-                            string[] workerValues = (string[])reader.GetValue(2);
-                            moders.AddRange(moderValues);
-                            experts.AddRange(expertValues);
-                            workers.AddRange(workerValues);
+                            string moderValues = (string)reader.GetValue(0); /* Везде содержатся ваши айди */
+                            string expertValues = (string)reader.GetValue(1);
+                            string workerValues = (string)reader.GetValue(2);
+                            moders.Add(moderValues);
+                            experts.Add(expertValues);
+                            workers.Add(workerValues);
+            }
+        }
+    }
+}
 
 
 
@@ -200,10 +203,6 @@ namespace ExpertBot
             }
 
 
-        }
-    }
-}
-            }
         }
     }
 }
