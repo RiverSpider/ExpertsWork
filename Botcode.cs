@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using Telegram.Bot.Types.InputFiles;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace ExpertBot
 {
@@ -31,6 +33,17 @@ namespace ExpertBot
         
         async static Task Update(ITelegramBotClient botClient, Update update, CancellationToken token)
         {
+            var ikm = new InlineKeyboardMarkup(new[]
+{
+            new[]
+            {
+                 InlineKeyboardButton.WithCallbackData("Expert"),
+            },
+            new[]
+            {
+            InlineKeyboardButton.WithCallbackData("Checker"),
+            },
+            });
             var message = update.Message;
 
             if (message != null)
@@ -47,7 +60,7 @@ namespace ExpertBot
                             ChatIDs.Add(message.Chat.Id);
                         }
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Добро пожаловать");
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль\n1.Эксперт - введите /expert\n2.Проверяющий - введите /checker");
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль\n1.Эксперт - введите /expert\n2.Проверяющий - введите /checker", replyMarkup: ikm);
                     }
 
                     if (message.Text.ToLower() == "/expert" && ChatIDs.Contains(message.Chat.Id))
@@ -96,7 +109,43 @@ namespace ExpertBot
 
                     if (message.Text.ToLower() == "/add_docx" && ChatIDs.Contains(message.Chat.Id))
                     {
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл");
+                        //await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл");
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Для добавления файла введите: /add_docx [name_directory] [name_file]");
+                    }
+                    
+                    if (message.Text.ToLower().Split(" ")[0] == "/add_docx" && (message.Text.ToLower().Split(" ").Length == 3) && ChatIDs.Contains(message.Chat.Id))
+                    {
+                        string path = "C:\\Users\\Полина\\source\\repos\\ExpertBot\\Bot_directory\\" + message.Text.ToLower().Split(" ")[1];
+                        if (!Directory.Exists(path))
+                        {
+                            Directory.CreateDirectory(path);
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Директория " + message.Text.ToLower().Split(" ")[1] + " создана");
+                            FileInfo fileInfo = new FileInfo(path + "\\FileName.txt");
+                            FileStream fs = fileInfo.Create();
+                            fs.Write(Encoding.UTF8.GetBytes(message.Text.ToLower().Split(" ")[2] + "\n"));
+                            fs.Close();
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Файл " + message.Text.ToLower().Split(" ")[2] + " добавлен в директорию " + message.Text.ToLower().Split(" ")[1]);
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Следующим сообщением прикрепите файл");
+                        }
+                        else
+                        {
+                            DirectoryInfo directory = new DirectoryInfo(path);
+                            FileInfo[] files = directory.GetFiles();
+                            foreach (FileInfo file in files)
+                            {
+                                Console.WriteLine(file.FullName);
+                            }
+                            System.IO.StreamWriter writer = new System.IO.StreamWriter(path + "\\FileName.txt", true);
+                            writer.WriteLine(message.Text.ToLower().Split(" ")[2]);
+                            writer.Close();
+                            //FileInfo fileInfo = new FileInfo(path + "\\FileName.txt");
+                            //FileStream fs = fileInfo();
+                            //fs.Write(Encoding.UTF8.GetBytes(message.Text.ToLower().Split(" ")[2] + "\n"));
+                            //fs.Close();
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Файл " + message.Text.ToLower().Split(" ")[2] + " добавлен в директорию " + message.Text.ToLower().Split(" ")[1]);
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Следующим сообщением прикрепите файл");
+                        }
+                        
                     }
 
                     if ((message.Text.ToLower().Split(" ")[0] == "/docx_delete") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
@@ -130,7 +179,7 @@ namespace ExpertBot
                     if (message.Text.ToLower() == "/add_directory" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id,
-                            "Для создания калатога введите: /n/add_directory [name_directory]");
+                            "Для создания калатога введите:\n /add_directory [name_directory]");
                     }
 
                     if ((message.Text.ToLower().Split(" ")[0] == "/add_directory") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
@@ -142,6 +191,9 @@ namespace ExpertBot
                         {
                             Directory.CreateDirectory(path + subs[1]);
                             await botClient.SendTextMessageAsync(message.Chat.Id, "Директория " + subs[1] + " создана");
+                            FileInfo fileInfo = new FileInfo(path + subs[1] + "\\FileName.txt");
+                            FileStream fs = fileInfo.Create();
+                            fs.Close();
                         }
                         else
                         {
