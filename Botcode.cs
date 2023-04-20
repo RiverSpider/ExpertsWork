@@ -85,26 +85,27 @@ namespace ExpertBot
 
                     if (message.Text.ToLower() == "/docx_watch" && ChatIDs.Contains(message.Chat.Id))
                     {
-                        StreamReader StreamR = new StreamReader("C:\\Users\\Полина\\source\\repos\\ExpertBot\\BotLibr.txt");
-                        string Reply = "";
-                        if (Convert.ToInt32(StreamR.ReadLine()) == 0)
+                        
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Для просмотра файлов каталога введите:\n /docx_watch [name_directory]");
+                        
+                    }
+
+                    if (message.Text.ToLower().Split(" ")[0] == "/docx_watch" && ChatIDs.Contains(message.Chat.Id) && message.Text.ToLower().Split(" ").Length == 2)
+                    {
+                        string path = "C:\\Users\\Полина\\source\\repos\\ExpertBot\\Bot_directory\\" + message.Text.ToLower().Split(" ")[1] + "\\FileName.txt";
+                        using (FileStream fs = System.IO.File.OpenRead(path))
                         {
-                            await botClient.SendTextMessageAsync(message.Chat.Id, "В данный момент в системе нет файлов");
-                        }
-                        else
-                        {
-                            for (int i = 0; i < Convert.ToInt32(StreamR.ReadLine()); i++)
+                            byte[] b = new byte[1024];
+                            UTF8Encoding temp = new UTF8Encoding(true);
+                            int readLen;
+                            while ((readLen = fs.Read(b,0,b.Length)) > 0)
                             {
-                                string Str = StreamR.ReadLine();
-                                Reply = Reply + Convert.ToString(i + 1) + ". " + Str + "\n";
+                                await botClient.SendTextMessageAsync(message.Chat.Id, temp.GetString(b,0,readLen));
                             }
-                            StreamR.Close();
-                            Reply = "Вам доступно " + Convert.ToString(Convert.ToInt32(StreamR.ReadLine())) + " файлов.\n" + Reply;
-                            await botClient.SendTextMessageAsync(message.Chat.Id, Reply);
-                            await botClient.SendTextMessageAsync(message.Chat.Id, 
+                        }
+                        await botClient.SendTextMessageAsync(message.Chat.Id, 
                             "Для скачивания файла введите: /docx_download [number_docx]\n" +
                             "Для удаления файла введите: /docx_delete [number_docx]");
-                        }
                     }
 
                     if (message.Text.ToLower() == "/add_docx" && ChatIDs.Contains(message.Chat.Id))
@@ -213,6 +214,9 @@ namespace ExpertBot
                             {
                                 await botClient.SendTextMessageAsync(message.Chat.Id, s.Split("\\")[7]);
                             }
+                        }
+                        else{
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Директорий не существует");
                         }
                     }
 
