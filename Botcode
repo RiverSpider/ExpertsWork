@@ -4,7 +4,9 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.InputFiles;
 using Npgsql;
+using System.IO;
 using System.Configuration;
+
 /* Для работы нужно уставносить все зависимости и добавить файл App.config*/
 
 
@@ -21,6 +23,7 @@ namespace ExpertBot
         public static List<string> workers = new List<string>();
         public static SortedSet<long> ChatIDs = new();
 
+        public static Dictionary<string, string> FileFormDict = new Dictionary<string, string>();
         static void Main(string[] args)
         {
             /*Тута подключаемся к ДБ и получаем айдишники */
@@ -44,10 +47,10 @@ namespace ExpertBot
                             moders.Add(moderValues);
                             experts.Add(expertValues);
                             workers.Add(workerValues);
+                        }
+                    }
+                }
             }
-        }
-    }
-}
 
 
 
@@ -120,7 +123,7 @@ namespace ExpertBot
                     }
                     if (message.Text.ToLower() == "/docs_add" && ChatIDs.Contains(message.Chat.Id))
                     {
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл");
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Отправьте файл\n Для добавления вопросов - '/add_questions'");
                     }
                     if ((message.Text.ToLower().Split(" ")[0] == "/docs_delete") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
                     {
@@ -135,6 +138,13 @@ namespace ExpertBot
                         StreamW.Close();
                         FileInfo fileInfo = new FileInfo("C:\\Users\\ov00v\\Desktop\\" + file_name);
                         fileInfo.Delete();
+                        bool fileExist = System.IO.File.Exists("C:\\Users\\ov00v\\Desktop\\Bot_forms\\" + file_name);
+                        if (fileExist)
+                        {
+                            FileInfo fileInfoForms = new FileInfo("C:\\Users\\ov00v\\Desktop\\Bot_forms\\" + file_name);
+                            fileInfoForms.Delete();
+                            FileFormDict.Remove(file_name);
+                        }
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Файл удалён");
                     }
                     if ((message.Text.ToLower().Split(" ")[0] == "/docs_download") && (message.Text.ToLower().Split(" ").Length == 2) && ChatIDs.Contains(message.Chat.Id))
@@ -151,7 +161,7 @@ namespace ExpertBot
                     if (message.Text.ToLower() == "/add_questions" && ChatIDs.Contains(message.Chat.Id))
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id,
-                            "Отправьте название документа и вопросы(Документ: name без расширения\n Вопросы: вопрос1\nвопрос2)");
+                            "Отправьте название документа и вопросы(Документ: name \n Вопросы: вопрос1\nвопрос2)");
                     }
                     if (message.Text.ToLower().Contains("документ:") && ChatIDs.Contains(message.Chat.Id))
                     {
@@ -160,9 +170,13 @@ namespace ExpertBot
                         string filePath = "C:\\Users\\ov00v\\Desktop\\Bot_forms\\";
                         int found = subs[0].IndexOf(":");
                         string name = subs[0].Substring(found + 2);
-                        filePath = filePath + name + ".txt";
-                        int found2 = subs[1].IndexOf(":");
-                        subs[1] = subs[1].Substring(found2 + 2);
+                        int found2 = name.IndexOf(".");
+                        string nameF = name.Substring(0, found2);
+                        nameF = nameF + ".txt";
+                        filePath = filePath + nameF;
+                        int found3 = subs[1].IndexOf(":");
+                        subs[1] = subs[1].Substring(found3 + 2);
+                        FileFormDict.Add(name, nameF);
                         // открываем файл если нет файла то создаем файл
                         using (StreamWriter fileStream = System.IO.File.Exists(filePath) ? System.IO.File.AppendText(filePath) : System.IO.File.CreateText(filePath))
                         {
