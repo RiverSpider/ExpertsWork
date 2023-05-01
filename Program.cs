@@ -41,7 +41,6 @@ class Program
     private static string cred = "D:\\ConsoleApp2\\client_secret_746455755052-10aillm3e7n6ni0srffcgmf8topsn4cc.apps.googleusercontent.com.json";
     private static string sheetName = "Sheet1";
 
-    // данные для бд + ещё нужно внести название директории в котором распологается файл
     private static Dictionary<string, string> FileFormDict = new Dictionary<string, string>();
     private static Dictionary<string, string> url_answer = new Dictionary<string, string>();
 
@@ -108,7 +107,7 @@ class Program
             ApplicationName = "Google Sheets API",
         });
 
-        var client = new TelegramBotClient("1686251987:AAG91P6-b6x9DhwjRGbFoTL2U2heYw-6aQI");
+        var client = new TelegramBotClient("5844793789:AAEx-E8FfHw9SBbJuMroR94npIv-J2rI0_E");
 
         client.StartReceiving(Update, Error);
         Console.ReadLine();
