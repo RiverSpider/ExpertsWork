@@ -454,6 +454,25 @@ class Program
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Вопросы закончились");
                     }
                 }
+                
+                if (message.Text.ToLower() == "/showing_answers")
+                {
+                    string str = "";
+                    int url_count = url_answer.Count;
+                    if (url_count > 0)
+                    {
+                        foreach (string line in url_answer.Keys)
+                        {
+                            str += $"{line}: {url_answer[line]}\n";
+                        }
+
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Список с ссылками на все таблицы с ответами:");
+                        await botClient.SendTextMessageAsync(message.Chat.Id, str);
+                    } else
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "В системе нет файлов на проверку");
+                    }
+                }
             }
         }
 
