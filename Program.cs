@@ -51,6 +51,35 @@ class Program
     private static List<string> experts = new List<string>(); // Добавь проверку на эксперта и воркера(это те кто файлы добавляют)
     private static List<string> workers = new List<string>();
     private static SortedSet<long> ChatIDs = new();
+    
+    private static void Start()
+    {
+        using (var stream = new FileStream(cred, FileMode.Open, FileAccess.Read))
+        {
+            string credPath = "token.json";
+            credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                GoogleClientSecrets.Load(stream).Secrets,
+                new[] { DriveService.Scope.Drive, SheetsService.Scope.Spreadsheets },
+                "user",
+                System.Threading.CancellationToken.None,
+                new FileDataStore(credPath, true)).Result;
+
+        }
+
+        //credential = GoogleCredential.GetApplicationDefault().CreateScoped(SheetsService.Scope.Spreadsheets);
+
+        driveService = new DriveService(new BaseClientService.Initializer()
+        {
+            HttpClientInitializer = credential,
+            ApplicationName = "Google Sheets API",
+        });
+
+        service = new SheetsService(new BaseClientService.Initializer()
+        {
+            HttpClientInitializer = credential,
+            ApplicationName = "Google Sheets API",
+        });
+    }
 
     static void Main(string[] args)
     {
@@ -81,32 +110,6 @@ class Program
             }
         }
 
-        using (var stream = new FileStream(cred, FileMode.Open, FileAccess.Read))
-        {
-            string credPath = "token.json";
-            credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                GoogleClientSecrets.Load(stream).Secrets,
-                new[] { SheetsService.Scope.Spreadsheets },
-                "user",
-                System.Threading.CancellationToken.None,
-                new FileDataStore(credPath, true)).Result;
-                
-        }
-
-        //credential = GoogleCredential.GetApplicationDefault().CreateScoped(SheetsService.Scope.Spreadsheets);
-
-        driveService = new DriveService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = credential,
-            ApplicationName = "Google Sheets API",
-        });
-
-        service = new SheetsService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = credential,
-            ApplicationName = "Google Sheets API",
-        });
-
         var client = new TelegramBotClient("5844793789:AAEx-E8FfHw9SBbJuMroR94npIv-J2rI0_E");
 
         client.StartReceiving(Update, Error);
@@ -128,6 +131,7 @@ class Program
             {
                 if (message.Text.ToLower() == "/start")
                 {
+                    Start();
                     await botClient.SendTextMessageAsync(message.Chat.Id, "Добро пожаловать");
                     await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль\n1.Эксперт - введите /expert\n2.Проверяющий - введите /checker");
                 }
