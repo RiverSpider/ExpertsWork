@@ -211,7 +211,7 @@ class Program
 
                 if (message.Text.ToLower() == "/add_docx")
                 {
-                    await botClient.SendTextMessageAsync(message.Chat.Id, "Для добавления файла введите: /add_docx [name_directory] [name_file(с расширением)]");
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Для добавления файла введите: /add_docx [name_directory] [name_file(с расширением)] \n Для добавления вопросов - '/add_questions'");
                 }
 
                 if (message.Text.ToLower().Split(" ")[0] == "/add_docx" && (message.Text.ToLower().Split(" ").Length == 3))
