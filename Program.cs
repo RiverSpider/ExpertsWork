@@ -1,4 +1,3 @@
-﻿
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using System.Threading.Tasks;
@@ -19,6 +18,10 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using System.Configuration;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
+using System.Security.Policy;
+using System.Data.SqlClient;
 
 class Program
 {
@@ -51,7 +54,7 @@ class Program
     private static List<string> experts = new List<string>(); // Добавь проверку на эксперта и воркера(это те кто файлы добавляют)
     private static List<string> workers = new List<string>();
     private static SortedSet<long> ChatIDs = new();
-    
+
     private static void Start()
     {
         using (var stream = new FileStream(cred, FileMode.Open, FileAccess.Read))
@@ -86,12 +89,13 @@ class Program
 
         /*Тута подключаемся к ДБ и получаем айдишники */
         string connectionString = ConfigurationManager.ConnectionStrings["ExpertBot"].ConnectionString; // эта строка не работает (не найден метод ConnectionStrings)
+        // работает. метод лежит в system.configuration
         using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
         {
             connection.Open();
 
-            string query = "SELECT moder, expert, worker FROM users";
-            using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+            string query1 = "SELECT moder, expert, worker FROM users";
+            using (NpgsqlCommand command = new NpgsqlCommand(query1, connection))
             {
                 using (NpgsqlDataReader reader = command.ExecuteReader())
                 {
@@ -105,6 +109,22 @@ class Program
                         moders.Add(moderValues);
                         experts.Add(expertValues);
                         workers.Add(workerValues);
+                    }
+                }
+            }
+
+            string query2 = "SELECT name, url FROM answers";
+            using (NpgsqlCommand command = new NpgsqlCommand(query2, connection))
+            {
+                using (NpgsqlDataReader reader = command.ExecuteReader())
+                {
+
+
+                    while (reader.Read())
+                    {
+                        string nameValues = (string)reader.GetValue(0);
+                        string urlValues = (string)reader.GetValue(1);
+                        url_answer.Add(nameValues, urlValues);
                     }
                 }
             }
@@ -194,31 +214,31 @@ class Program
                 }
 
                 if (message.Text.ToLower().Split(" ")[0] == "/add_docx" && (message.Text.ToLower().Split(" ").Length == 3))
+                {
+                    string path = dir_path + message.Text.ToLower().Split(" ")[1];
+                    if (!Directory.Exists(path))
                     {
-                        string path = dir_path + message.Text.ToLower().Split(" ")[1];
-                        if (!Directory.Exists(path))
+                        Directory.CreateDirectory(path);
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Директория " + message.Text.ToLower().Split(" ")[1] + " создана");
+                        FileInfo fileInfo = new FileInfo(path + "\\FileName.txt");
+                        FileStream fs = fileInfo.Create();
+                        fs.Write(Encoding.UTF8.GetBytes(message.Text.ToLower().Split(" ")[2] + "\n"));
+                        fs.Close();
+                    }
+                    else
+                    {
+                        DirectoryInfo directory = new DirectoryInfo(path);
+                        FileInfo[] files = directory.GetFiles();
+                        foreach (FileInfo file in files)
                         {
-                            Directory.CreateDirectory(path);
-                            await botClient.SendTextMessageAsync(message.Chat.Id, "Директория " + message.Text.ToLower().Split(" ")[1] + " создана");
-                            FileInfo fileInfo = new FileInfo(path + "\\FileName.txt");
-                            FileStream fs = fileInfo.Create();
-                            fs.Write(Encoding.UTF8.GetBytes(message.Text.ToLower().Split(" ")[2] + "\n"));
-                            fs.Close();
+                            Console.WriteLine(file.FullName);
                         }
-                        else
-                        {
-                            DirectoryInfo directory = new DirectoryInfo(path);
-                            FileInfo[] files = directory.GetFiles();
-                            foreach (FileInfo file in files)
-                            {
-                                Console.WriteLine(file.FullName);
-                            }
-                            System.IO.StreamWriter writer = new System.IO.StreamWriter(path + "\\FileName.txt", true);
-                            writer.WriteLine(message.Text.ToLower().Split(" ")[2]);
-                            writer.Close();
-                        }
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Файл " + message.Text.ToLower().Split(" ")[2] + " добавлен в директорию " + message.Text.ToLower().Split(" ")[1]);
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Следующим сообщением прикрепите файл");
+                        System.IO.StreamWriter writer = new System.IO.StreamWriter(path + "\\FileName.txt", true);
+                        writer.WriteLine(message.Text.ToLower().Split(" ")[2]);
+                        writer.Close();
+                    }
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Файл " + message.Text.ToLower().Split(" ")[2] + " добавлен в директорию " + message.Text.ToLower().Split(" ")[1]);
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Следующим сообщением прикрепите файл");
 
                 }
 
@@ -258,11 +278,9 @@ class Program
                             if (file.Name.Equals(desired_url))
                             {
                                 sheetId = file.Id;
-
                                 break;
                             }
                         }
-
                         service.Spreadsheets.BatchUpdate(new BatchUpdateSpreadsheetRequest()
                         {
                             Requests = new List<Request> { new Request { DeleteSheet = new DeleteSheetRequest { SheetId = 1 } } }
@@ -270,7 +288,8 @@ class Program
                         */
 
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Файл удалён");
-                    } catch (Exception ex)
+                    }
+                    catch (Exception ex)
                     {
                         Console.WriteLine(ex.ToString());
                     }
@@ -297,12 +316,14 @@ class Program
                             await botClient.SendTextMessageAsync(message.Chat.Id, "Отправление ответов происходит в следующем формате: /answer_to_questions ответ на вопрос");
                             await botClient.SendTextMessageAsync(message.Chat.Id, "Для того, чтобы не отвечать на вопрос введите: пропуск вопроса");
                             lineNumber = 0;
-                        } else
+                        }
+                        else
                         {
                             await botClient.SendTextMessageAsync(message.Chat.Id, "К файлу не прикреплены вопросы");
                         }
 
-                    } catch(Exception ex)
+                    }
+                    catch (Exception ex)
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Файл для скачивания не найден");
                         Console.WriteLine(ex.ToString());
@@ -334,7 +355,7 @@ class Program
                     using (StreamWriter fileStream = System.IO.File.Exists(filePath) ? System.IO.File.AppendText(filePath) : System.IO.File.CreateText(filePath))
                     {
                         for (int i = 1; i < subs.Length; i++)
-                        {   
+                        {
                             message.Text = subs[i];
                             fileStream.WriteLine(subs[i]);
                             EnterData(message, i);
@@ -385,7 +406,8 @@ class Program
                         {
                             await botClient.SendTextMessageAsync(message.Chat.Id, "Директорий не существует");
                         }
-                    } catch(Exception ex)
+                    }
+                    catch (Exception ex)
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Директорий не существует");
                     }
@@ -416,11 +438,11 @@ class Program
                 {
                     try
                     {
-                                
-                                lineNumber += 1;
-                                EnterData(message, lineNumber);
-                                // это нужно для показа следующего вопроса пользователю
-                                message.Text = "/answer_to_questions";
+
+                        lineNumber += 1;
+                        EnterData(message, lineNumber);
+                        // это нужно для показа следующего вопроса пользователю
+                        message.Text = "/answer_to_questions";
                     }
                     catch (Exception ex)
                     {
@@ -449,7 +471,7 @@ class Program
                         await botClient.SendTextMessageAsync(message.Chat.Id, text);
                         //lineNumber += 1;
                     }
-                    catch(System.NullReferenceException ex)
+                    catch (System.NullReferenceException ex)
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Выберете сначала документ для скачивания");
                     }
@@ -458,7 +480,7 @@ class Program
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Вопросы закончились");
                     }
                 }
-                
+
                 if (message.Text.ToLower() == "/showing_answers")
                 {
                     string str = "";
@@ -472,7 +494,8 @@ class Program
 
                         await botClient.SendTextMessageAsync(message.Chat.Id, "Список с ссылками на все таблицы с ответами:");
                         await botClient.SendTextMessageAsync(message.Chat.Id, str);
-                    } else
+                    }
+                    else
                     {
                         await botClient.SendTextMessageAsync(message.Chat.Id, "В системе нет файлов на проверку");
                     }
@@ -482,35 +505,35 @@ class Program
 
         if (message.Document != null && ChatIDs.Contains(message.Chat.Id))
         {
-                await botClient.SendTextMessageAsync(message.Chat.Id, "Файл принят");
+            await botClient.SendTextMessageAsync(message.Chat.Id, "Файл принят");
 
-                var fileId = update.Message.Document.FileId;
-                var fileInfo = await botClient.GetFileAsync(fileId);
-                var filePath = fileInfo.FilePath;
-                var filename = message.Document.FileName;
-                var filename_answer = filename + "_answer";
+            var fileId = update.Message.Document.FileId;
+            var fileInfo = await botClient.GetFileAsync(fileId);
+            var filePath = fileInfo.FilePath;
+            var filename = message.Document.FileName;
+            var filename_answer = filename + "_answer";
 
-                //string destinationFilePath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\{filename}";
+            //string destinationFilePath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\{filename}";
 
-                await using Stream fileStream = System.IO.File.OpenWrite($"{files_path}\\{filename}");
-                await botClient.DownloadFileAsync(filePath, fileStream);
-                fileStream.Close();
-                StreamReader StreamR = new StreamReader(libr_path);
-                int count = Convert.ToInt32(StreamR.ReadLine());
-                string Reply = StreamR.ReadToEnd();
-                StreamR.Close();
-                StreamWriter StreamW = new StreamWriter(libr_path, false);
-                StreamW.Write(Convert.ToString(count + 1) + "\n" + Reply + "\n" + filename);
-                StreamW.Close();
+            await using Stream fileStream = System.IO.File.OpenWrite($"{files_path}\\{filename}");
+            await botClient.DownloadFileAsync(filePath, fileStream);
+            fileStream.Close();
+            StreamReader StreamR = new StreamReader(libr_path);
+            int count = Convert.ToInt32(StreamR.ReadLine());
+            string Reply = StreamR.ReadToEnd();
+            StreamR.Close();
+            StreamWriter StreamW = new StreamWriter(libr_path, false);
+            StreamW.Write(Convert.ToString(count + 1) + "\n" + Reply + "\n" + filename);
+            StreamW.Close();
 
-                // создание google sheets с сохранением url адреса таблицы
-                var spreadsheet = new Spreadsheet()
+            // создание google sheets с сохранением url адреса таблицы
+            var spreadsheet = new Spreadsheet()
+            {
+                Properties = new SpreadsheetProperties()
                 {
-                    Properties = new SpreadsheetProperties()
-                    {
-                        Title = filename_answer
-                    },
-                    Sheets = new List<Sheet>()
+                    Title = filename_answer
+                },
+                Sheets = new List<Sheet>()
                             {
                                 new Sheet()
                                 {
@@ -524,15 +547,48 @@ class Program
                                     }
                                 }
                             }
-                };
+            };
 
-                var request = service.Spreadsheets.Create(spreadsheet);
-                var response = request.Execute();
+            var request = service.Spreadsheets.Create(spreadsheet);
+            var response = request.Execute();
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+        {
+            connection.Open();
 
-                // заносим url адрес в список
-                string spreadsheetURL = response.SpreadsheetUrl;
-                url_answer[filename_answer] = spreadsheetURL;
-                desired_url = filename_answer;
+            string query = "SELECT moder, expert, worker FROM users";
+            using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+            {
+                using (NpgsqlDataReader reader = command.ExecuteReader())
+                {
+
+
+                    while (reader.Read())
+                    {
+                        string moderValues = (string)reader.GetValue(0); /* Везде содержатся ваши айди */
+                        string expertValues = (string)reader.GetValue(1);
+                        string workerValues = (string)reader.GetValue(2);
+                        moders.Add(moderValues);
+                        experts.Add(expertValues);
+                        workers.Add(workerValues);
+                    }
+                }
+            }
+            }// заносим url адрес в список
+            string spreadsheetURL = response.SpreadsheetUrl;
+            string connectionString = ConfigurationManager.ConnectionStrings["ExpertBot"].ConnectionString; // эта строка не работает (не найден метод ConnectionStrings)
+            string sql = "INSERT INTO answers (name, url) VALUES (@Name, @Url)";                               // работает. метод лежит в system.configuration
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
+            {
+                
+                command.Parameters.AddWithValue("@Name", filename_answer);
+                command.Parameters.AddWithValue("@Url", spreadsheetURL);
+
+                connection.Open();
+                int rowsAffected = command.ExecuteNonQuery();
+                connection.Close();
+            }
+            desired_url = filename_answer;
         }
 
     }
@@ -571,7 +627,7 @@ class Program
             return 1;
         }
     }
-    
+
     private static void EnterData(Message message, int lineNumber)
     {
         // получаем название колонки в таблице
