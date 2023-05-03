@@ -552,29 +552,6 @@ class Program
 
             var request = service.Spreadsheets.Create(spreadsheet);
             var response = request.Execute();
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
-        {
-            connection.Open();
-
-            string query = "SELECT moder, expert, worker FROM users";
-            using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
-            {
-                using (NpgsqlDataReader reader = command.ExecuteReader())
-                {
-
-
-                    while (reader.Read())
-                    {
-                        string moderValues = (string)reader.GetValue(0); /* Везде содержатся ваши айди */
-                        string expertValues = (string)reader.GetValue(1);
-                        string workerValues = (string)reader.GetValue(2);
-                        moders.Add(moderValues);
-                        experts.Add(expertValues);
-                        workers.Add(workerValues);
-                    }
-                }
-            }
-            }// заносим url адрес в список
             string spreadsheetURL = response.SpreadsheetUrl;
             string connectionString = ConfigurationManager.ConnectionStrings["ExpertBot"].ConnectionString; // эта строка не работает (не найден метод ConnectionStrings)
             string sql = "INSERT INTO answers (name, url) VALUES (@Name, @Url)";                               // работает. метод лежит в system.configuration
