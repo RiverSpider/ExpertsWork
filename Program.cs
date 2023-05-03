@@ -173,7 +173,8 @@ class Program
                     "Просмотреть каталоги: /directory_watch\n" +
                     "Удалить каталог: /directory_delete\n" +
                     "Добавить документ: /add_docx\n" +
-                    "Просмотреть документы: /docx_watch");
+                    "Просмотреть документы: /docx_watch\n" + 
+                    "Просмотреть ответы: /showing_answers");
                 }
 
                 if (message.Text.ToLower() == "/docx_watch")
