@@ -89,6 +89,7 @@ class Program
 
         /*Тута подключаемся к ДБ и получаем айдишники */
         // работает. метод лежит в system.configuration
+        string connectionString = ConfigurationManager.ConnectionStrings["ExpertWork"].ConnectionString;
         using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
         {
             connection.Open();
