@@ -41,7 +41,7 @@ class Program
     private static UserCredential credential;
     private static SheetsService service;
     private static DriveService driveService;
-    private static string cred = "D:\\ConsoleApp2\\client_secret_378576405434-opc6r5d4jprntr4bhf9qcpalib8708d2.apps.googleusercontent.com.com.json";
+    private static string cred = "D:\\ConsoleApp2\\client_secret_378576405434-opc6r5d4jprntr4bhf9qcpalib8708d2.apps.googleusercontent.com.json";
     private static string sheetName = "Sheet1";
 
     private static Dictionary<string, string> FileFormDict = new Dictionary<string, string>();
