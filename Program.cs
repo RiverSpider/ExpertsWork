@@ -88,7 +88,6 @@ class Program
     {
 
         /*Тута подключаемся к ДБ и получаем айдишники */
-        string connectionString = ConfigurationManager.ConnectionStrings["ExpertBot"].ConnectionString; // эта строка не работает (не найден метод ConnectionStrings)
         // работает. метод лежит в system.configuration
         using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
         {
@@ -553,7 +552,7 @@ class Program
             var request = service.Spreadsheets.Create(spreadsheet);
             var response = request.Execute();
             string spreadsheetURL = response.SpreadsheetUrl;
-            string connectionString = ConfigurationManager.ConnectionStrings["ExpertBot"].ConnectionString; // эта строка не работает (не найден метод ConnectionStrings)
+            string connectionString = ConfigurationManager.ConnectionStrings["ExpertWork"].ConnectionString; // эта строка не работает (не найден метод ConnectionStrings)
             string sql = "INSERT INTO answers (name, url) VALUES (@Name, @Url)";                               // работает. метод лежит в system.configuration
             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
             using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
