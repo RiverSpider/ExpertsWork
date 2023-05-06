@@ -145,18 +145,22 @@ class Program
     {
         var message = update.Message;
 
-        if (message != null && ChatIDs.Contains(message.Chat.Id))
+        if (message != null)
         {
             if (message.Text != null)
             {
                 if (message.Text.ToLower() == "/start")
                 {
+                    if (moders.Contains(message.Chat.Username))
+                    {
+                        ChatIDs.Add(message.Chat.Id);
+                    }
                     Start();
                     await botClient.SendTextMessageAsync(message.Chat.Id, "Добро пожаловать");
                     await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите вашу роль\n1.Эксперт - введите /expert\n2.Проверяющий - введите /checker");
                 }
 
-                if (message.Text.ToLower() == "/expert")
+                if (message.Text.ToLower() == "/expert" && (experts.Contains(message.Chat.Username)))
                 {
                     await botClient.SendTextMessageAsync(message.Chat.Id,
                     "Как эксперт вы можете:\n" +
@@ -165,7 +169,7 @@ class Program
                     "Зайти как проверяющий: /checker");//?
                 }
 
-                if (message.Text.ToLower() == "/checker")
+                if (message.Text.ToLower() == "/checker" && (workers.Contains(message.Chat.Username)))
                 {
                     await botClient.SendTextMessageAsync(message.Chat.Id,
                     "Как проверяющий вы можете:\n" +
@@ -173,7 +177,7 @@ class Program
                     "Просмотреть каталоги: /directory_watch\n" +
                     "Удалить каталог: /directory_delete\n" +
                     "Добавить документ: /add_docx\n" +
-                    "Просмотреть документы: /docx_watch\n" + 
+                    "Просмотреть документы: /docx_watch\n" +
                     "Просмотреть ответы: /showing_answers");
                 }
 
@@ -266,29 +270,38 @@ class Program
                             FileInfo fileInfoForms = new FileInfo($"{forms_path}\\{file_name}");
                             fileInfoForms.Delete();
                             FileFormDict.Remove(file_name);
-                        }
-
-                        /*
-                        // удаление таблицы в google.drive
-                        desired_url = file_name + "_answer";
-                        Console.WriteLine(desired_url);
-                        var request = driveService.Files.List();
-                        var response = request.Execute();
-                        foreach (var file in response.Files)
-                        {
-                            if (file.Name.Equals(desired_url))
+                            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
                             {
-                                sheetId = file.Id;
-                                break;
-                            }
-                        }
-                        service.Spreadsheets.BatchUpdate(new BatchUpdateSpreadsheetRequest()
-                        {
-                            Requests = new List<Request> { new Request { DeleteSheet = new DeleteSheetRequest { SheetId = 1 } } }
-                        }, sheetId).Execute();
-                        */
+                                connection.Open();
 
-                        await botClient.SendTextMessageAsync(message.Chat.Id, "Файл удалён");
+                                string sql = "DELETE FROM answers WHERE name = @name";
+                                using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
+                                {
+                                    command.Parameters.AddWithValue("name", file_name);
+                                }
+                            }
+
+                            /*
+                            // удаление таблицы в google.drive
+                            desired_url = file_name + "_answer";
+                            Console.WriteLine(desired_url);
+                            var request = driveService.Files.List();
+                            var response = request.Execute();
+                            foreach (var file in response.Files)
+                            {
+                                if (file.Name.Equals(desired_url))
+                                {
+                                    sheetId = file.Id;
+                                    break;
+                                }
+                            }
+                            service.Spreadsheets.BatchUpdate(new BatchUpdateSpreadsheetRequest()
+                            {
+                                Requests = new List<Request> { new Request { DeleteSheet = new DeleteSheetRequest { SheetId = 1 } } }
+                            }, sheetId).Execute();
+                            */
+
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Файл удалён");
                     }
                     catch (Exception ex)
                     {
@@ -352,6 +365,18 @@ class Program
                     int found3 = subs[1].IndexOf(":");
                     subs[1] = subs[1].Substring(found3 + 2);
                     FileFormDict.Add(name, nameF);
+                    string connectionString = ConfigurationManager.ConnectionStrings["ExpertWork"].ConnectionString; 
+                    string sql = "INSERT INTO answers (nameF) VALUES (@NameF) WHERE name = @name;                      
+                    using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+                    using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("name", name);
+                        command.Parameters.AddWithValue("@NameF", nameF);
+
+                        connection.Open();
+                        int rowsAffected = command.ExecuteNonQuery();
+                        connection.Close();
+                    }
                     // открываем файл если нет файла то создаем файл
                     using (StreamWriter fileStream = System.IO.File.Exists(filePath) ? System.IO.File.AppendText(filePath) : System.IO.File.CreateText(filePath))
                     {
@@ -501,6 +526,33 @@ class Program
                         await botClient.SendTextMessageAsync(message.Chat.Id, "В системе нет файлов на проверку");
                     }
                 }
+
+
+                if ((message.Text.ToLower().Split(" ")[0] == "/adduser") && (message.Text.ToLower().Split(" ").Length == 3) && (moders.Contains(message.Chat.Username)))
+                {
+                    try
+                    {
+                        string[] subs = message.Text.ToLower().Split(" ");
+                        string connectionString = ConfigurationManager.ConnectionStrings["ExpertWork"].ConnectionString;
+                        string sql = "INSERT INTO users (@access) VALUES (@name);                      
+                    using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+                        using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
+                        {
+                            command.Parameters.AddWithValue("@access", subs[1]);
+                            command.Parameters.AddWithValue("@name", subs[2]);
+
+                            connection.Open();
+                            int rowsAffected = command.ExecuteNonQuery();
+                            connection.Close();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, "Error");
+                        Console.WriteLine(ex.ToString());
+                    }
+
+                }
             }
         }
 
@@ -552,13 +604,14 @@ class Program
 
             var request = service.Spreadsheets.Create(spreadsheet);
             var response = request.Execute();
+            url_answer.Add(filename_answer, spreadsheetURL);
             string spreadsheetURL = response.SpreadsheetUrl;
             string connectionString = ConfigurationManager.ConnectionStrings["ExpertWork"].ConnectionString; // эта строка не работает (не найден метод ConnectionStrings)
             string sql = "INSERT INTO answers (name, url) VALUES (@Name, @Url)";                               // работает. метод лежит в system.configuration
             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
             using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
             {
-                
+
                 command.Parameters.AddWithValue("@Name", filename_answer);
                 command.Parameters.AddWithValue("@Url", spreadsheetURL);
 
