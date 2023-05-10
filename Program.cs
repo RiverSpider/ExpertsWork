@@ -568,11 +568,10 @@ class Program
                         try
                         {
                             string[] subs = message.Text.ToLower().Split(" ");
-                            string sql = "INSERT INTO users (@access) VALUES (@name)";
+                            string sql = "INSERT INTO users (" + subs[1] + ") VALUES (@name)";
                             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
                             using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
                             {
-                                command.Parameters.AddWithValue("@access", subs[1]);
                                 command.Parameters.AddWithValue("@name", subs[2]);
 
                                 connection.Open();
